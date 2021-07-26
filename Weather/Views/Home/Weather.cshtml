@@ -1,0 +1,142 @@
+﻿@{
+    ViewBag.Title = "Weather";
+}
+
+<h1>Search City and Get Weather Forecast</h1>
+
+<div class="weather-container">
+    <strong>City Name  :</strong> <select id="txtCity" type="text">
+        <option value="Tashkent">Tashkent</option>
+        <option value="Dubai">Dubai</option>
+        <option value="Geneve">Geneve</option>
+        <option value="Istanbul">Istanbul</option>
+        <option value="Miami">Miami</option>
+    </select>
+</div>
+
+
+<div class="weather-main">
+    <h2>Weather Forecast</h2>
+    <table>
+        <tr>
+            <td>Weather Symbol Icon <img id="imgWeatherIconUrl" src="" title=" Weather Icon " /></td>
+        </tr>
+        <tr>
+            <td>
+                <strong>City: </strong>
+                <span id="lblCity"></span>  ,
+                <span id="lblCountry"></span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <strong>Latitude: </strong>
+                <label id="lblLat"></label><br />
+                <strong>Longitude: </strong>
+                <label id="lblLon"></label>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <strong>Description: </strong>
+                <label id="lblDescription"></label><br />
+                <strong>Humidity: </strong>
+                <label id="lblHumidity"></label>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                Temperature (Feels Like) <label id="lblTempFeelsLike"></label><br />
+                Temperature <label id="lblTemp"></label><br />
+                Temperature (Min): <label id="lblTempMin"></label><br />
+                Temperature (Max): <label id="lblTempMax"></label><br />
+            </td>
+        </tr>
+
+
+    </table>
+</div>
+
+<div class="signalr-demo">
+    <form id="message-form">
+        <input type="text" id="message-box" />
+    </form>
+    <hr />
+    <ul id="messages"></ul>
+</div>
+<script src="https://unpkg.com/@@aspnet/signalr@@1.0.0-rc1-final/dist/browser/signalr.js"></script>
+<script>
+    const messageForm = document.getElementById('message-form');
+    const messageBox = document.getElementById('message-box');
+    const messages = document.getElementById('messages');
+
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/chat")
+        .configureLogging(signalR.LogLevel.Information)
+        .build();
+
+    connection.on('newMessage', (sender, messageText) => {
+        console.log(`${sender}:${messageText}`);
+
+        const newMessage = document.createElement('li');
+        newMessage.appendChild(document.createTextNode(`${sender}:${messageText}`));
+        messages.appendChild(newMessage);
+    });
+
+    connection.start()
+        .then(() => console.log('connected!'))
+        .catch(console.error);
+
+    messageForm.addEventListener('submit', ev => {
+        ev.preventDefault();
+        const message = messageBox.value;
+        connection.invoke('SendMessage', message);
+        messageBox.value = '';
+    });
+</script>
+
+<script>
+
+    $("#txtCity").change(function () {
+        var defaultValue = 1
+
+        $(`.qual_id option[value=${defaultValue}]`).attr('selected', true);
+        var cityname = $(this).val();
+        if (cityname.length > 0) {
+            $.ajax({
+                url: "https://localhost:5001/Home/WeatherDetail?City=" + cityname,
+                type: "POST",
+                success: function (rsltval) {
+                    var data = JSON.parse(rsltval);
+                    console.log(data);
+                    $("#lblCity").html(data.City);
+                    $("#lblCountry").text(data.Country);
+                    $("#lblLat").text(data.Lat);
+                    $("#lblLon").text(data.Lon);
+                    $("#lblDescription").text(data.Description);
+                    $("#lblHumidity").text(data.Humidity);
+                    $("#lblTempFeelsLike").text(data.TempFeelsLike);
+                    $("#lblTemp").text(data.Temp);
+                    $("#lblTempMax").text(data.TempMax);
+                    $("#lblTempMin").text(data.TempMin);
+                    $("#imgWeatherIconUrl").attr("src", "http://openweathermap.org/img/w/" + data.WeatherIcon + ".png");
+                    //data - response from server
+                },
+                error: function () {
+
+                }
+            });
+        }
+        else {
+            alert("City Not Found");
+        }
+    });
+
+</script>    
+<style>
+   
+    .weather-main{
+        position: center;
+    }
+</style>
